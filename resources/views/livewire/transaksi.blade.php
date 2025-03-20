@@ -20,7 +20,7 @@
             <div class="card border-primary">
                 <div class="card-body">
                     <h4 class="card-title">No Invoice : {{ $transaksiAktif->kode }}</h4>
-                    <input type="text" class="form-control" placeholder="No. Invoice" wire:model="kode">
+                    <input type="text" class="form-control" placeholder="No. Invoice" wire:model.live="kode">
                     <table class="table table-bordered">
                         <thead>
                             <tr>
@@ -46,9 +46,7 @@
                                     <button class="btn btn-danger" wire:click="hapusProduk({{ $produk->id }})">Hapus</button>
                                 </td>
                             </tr>
-                        @endforeach
-
-
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -69,7 +67,8 @@
             <div class="card border-primary mt-2">
                 <div class="card-body">
                     <h4 class="card-title">Bayar</h4>
-                    <input type="number" class="form-control" placeholder="Masukkan Nominal" wire:model="bayar">
+                    <!-- Tambahkan wire:model.live agar input diperbarui ke Livewire -->
+                    <input type="number" class="form-control" placeholder="Masukkan Nominal" wire:model.live="bayar">
                 </div>
             </div>
 

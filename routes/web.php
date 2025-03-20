@@ -22,3 +22,6 @@ Route::get(uri: '/laporan', action: Laporan::class)->middleware(middleware: ['au
 Route::get(uri: '/produk', action: Produk::class)->middleware(middleware: ['auth'])->name(name: 'produk');
 
 Route::get(uri: '/transaksi', action: Transaksi::class)->middleware(middleware: ['auth'])->name(name: 'transaksi');
+
+
+Route::get('/cetak', [HomeController::class, 'cetak']);

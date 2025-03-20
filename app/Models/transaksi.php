@@ -9,9 +9,6 @@ class Transaksi extends Model
 {
     use HasFactory;
 
-    // Add 'kode' to the fillable array
     protected $fillable = ['kode', 'total', 'status'];
-
-    // Optionally, you can define the timestamps if needed
-    public $timestamps = true;
 }
+

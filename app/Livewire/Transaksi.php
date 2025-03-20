@@ -5,21 +5,16 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Transaksi as ModelsTransaksi;
 use App\Models\detil_transaksi;
-use App\Models\Produk;
+use App\Models\Produk; // ✅ Tambahkan ini
 
 class Transaksi extends Component
 {
-    public $kode, $total, $bayar = 0, $kembalian, $totalSebelumBelanja;
-    public $transaksiAktif = null;
-
     public function render()
 {
+    // Pastikan transaksi aktif ada
     $semuaProduk = [];
     if ($this->transaksiAktif) {
-        $semuaProduk = detil_transaksi::where('transaksi_id', $this->transaksiAktif->id)
-            ->with('produk')  // Eager load the 'produk' relationship
-            ->get();
-
+        $semuaProduk = detil_transaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
         $this->totalSebelumBelanja = $semuaProduk->sum(function ($detil) {
             return $detil->jumlah * $detil->produk->harga;
         });
@@ -32,6 +27,8 @@ class Transaksi extends Component
 }
 
 
+    public $kode, $total, $bayar = 0, $kembalian, $totalSebelumBelanja;
+    public $transaksiAktif = null; // Ubah dari private ke public
 
     public function transaksiBaru(): void
     {
@@ -48,7 +45,7 @@ class Transaksi extends Component
         if ($this->transaksiAktif) {
             $detilTransaksi = detil_transaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
             foreach ($detilTransaksi as $detil) {
-                $produk = Produk::find($detil->produk_id);
+                $produk =Produk::find($detil->produk_id);
                 $produk->stok += $detil->jumlah;
                 $produk->save();
                 $detil->delete();
@@ -60,34 +57,31 @@ class Transaksi extends Component
     }
 
     public function updatedKode(): void
-{
-    $produk = Produk::where('kode', $this->kode)->first();
+    {
+        $produk = Produk::where( 'kode',  $this->kode)->first();
+        if ($produk && $produk->stok > 0) {
+            $detil = detil_transaksi::firstOrNew(
+                [
+                    'transaksi_id' => $this->transaksiAktif->id,
+                    'produk_id' => $produk->id
+                ],
+                ['jumlah' => 0] // Nilai default jika tidak ditemukan
+            );
 
-    if ($produk && $produk->stok > 0) {
-        // Check if this product is already in the transaction
-        $detil = detil_transaksi::firstOrNew(
-            ['transaksi_id' => $this->transaksiAktif->id, 'produk_id' => $produk->id],
-            ['jumlah' => 0]
-        );
+            $detil->jumlah += 1;
+            $detil->save();
+            $produk->stok -= 1;
+            $produk->save();
+            $this->reset('kode');
 
-        // Increase quantity by 1
-        $detil->jumlah += 1;
-        $detil->save();
 
-        // Reduce stock
-        $produk->stok -= 1;
-        $produk->save();
-
-        // Reset the kode after successful addition
-        $this->reset('kode');
+        }
     }
-}
-
 
     public function hapusProduk($id)
     {
         $detil = detil_transaksi::find($id);
-        if ($detil) {
+        if($detil){
             $produk = Produk::find($detil->produk_id);
             $produk->stok += ($detil->jumlah);
             $produk->save();
@@ -95,8 +89,7 @@ class Transaksi extends Component
         $detil->delete();
     }
 
-    public function transaksiSelesai()
-    {
+    public function transaksiSelesai(){
         $this->transaksiAktif->total = $this->totalSebelumBelanja;
         $this->transaksiAktif->status = 'selesai';
         $this->transaksiAktif->save();
@@ -104,10 +97,13 @@ class Transaksi extends Component
     }
 
     public function updatedBayar()
-    {
-        $this->bayar = (float) $this->bayar;
-        $this->totalSebelumBelanja = (float) $this->totalSebelumBelanja;
+{
+    $this->bayar = (float) $this->bayar;
+    $this->totalSebelumBelanja = (float) $this->totalSebelumBelanja;
 
-        $this->kembalian = $this->bayar - $this->totalSebelumBelanja;
-    }
+    $this->kembalian = $this->bayar - $this->totalSebelumBelanja;
+}
+
+
+
 }
