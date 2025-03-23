@@ -101,5 +101,12 @@ public function simpanEdit()
     $this->pilihanMenu = 'lihat'; // Kembali ke daftar pengguna
 }
 
+// public function mount(){
+
+//     if (auth()->user()->role != 'admin') {
+//         abort(403);
+//     }
+// }
+
 
 }

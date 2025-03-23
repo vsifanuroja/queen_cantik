@@ -4,31 +4,29 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Transaksi as ModelsTransaksi;
-use App\Models\detil_transaksi;
-use App\Models\Produk; // ✅ Tambahkan ini
+use App\Models\DetilTransaksi;
+use App\Models\Produk;
 
 class Transaksi extends Component
 {
     public function render()
-{
-    // Pastikan transaksi aktif ada
-    $semuaProduk = [];
-    if ($this->transaksiAktif) {
-        $semuaProduk = detil_transaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
-        $this->totalSebelumBelanja = $semuaProduk->sum(function ($detil) {
-            return $detil->jumlah * $detil->produk->harga;
-        });
+    {
+        $semuaProduk = [];
+        $this->totalSebelumBelanja = 0;
+
+        if ($this->transaksiAktif) {
+            $semuaProduk = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
+            $this->totalSebelumBelanja = $semuaProduk->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
+        }
+
+        return view('livewire.transaksi', [
+            'semuaProduk' => $semuaProduk,
+            'totalSemuaBelanja' => $this->totalSebelumBelanja
+        ]);
     }
 
-    return view('livewire.transaksi', [
-        'semuaProduk' => $semuaProduk,
-        'totalSemuaBelanja' => $this->totalSebelumBelanja ?? 0
-    ]);
-}
-
-
     public $kode, $total, $bayar = 0, $kembalian, $totalSebelumBelanja;
-    public $transaksiAktif = null; // Ubah dari private ke public
+    public $transaksiAktif = null;
 
     public function transaksiBaru(): void
     {
@@ -43,9 +41,9 @@ class Transaksi extends Component
     public function batalTransaksi(): void
     {
         if ($this->transaksiAktif) {
-            $detilTransaksi = detil_transaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
+            $detilTransaksi = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
             foreach ($detilTransaksi as $detil) {
-                $produk =Produk::find($detil->produk_id);
+                $produk = Produk::find($detil->produk_id);
                 $produk->stok += $detil->jumlah;
                 $produk->save();
                 $detil->delete();
@@ -58,14 +56,14 @@ class Transaksi extends Component
 
     public function updatedKode(): void
     {
-        $produk = Produk::where( 'kode',  $this->kode)->first();
+        $produk = Produk::where('kode', $this->kode)->first();
         if ($produk && $produk->stok > 0) {
-            $detil = detil_transaksi::firstOrNew(
+            $detil = DetilTransaksi::firstOrNew(
                 [
                     'transaksi_id' => $this->transaksiAktif->id,
                     'produk_id' => $produk->id
                 ],
-                ['jumlah' => 0] // Nilai default jika tidak ditemukan
+                ['jumlah' => 0]
             );
 
             $detil->jumlah += 1;
@@ -73,37 +71,59 @@ class Transaksi extends Component
             $produk->stok -= 1;
             $produk->save();
             $this->reset('kode');
-
-
         }
     }
 
     public function hapusProduk($id)
     {
-        $detil = detil_transaksi::find($id);
-        if($detil){
+        $detil = DetilTransaksi::find($id);
+        if ($detil) {
             $produk = Produk::find($detil->produk_id);
-            $produk->stok += ($detil->jumlah);
+            $produk->stok += $detil->jumlah;
             $produk->save();
         }
         $detil->delete();
     }
+    public function transaksiSelesai()
+    {
+        // Pastikan ada transaksi aktif sebelum lanjut
+        if (!$this->transaksiAktif) {
+            session()->flash('error', 'Tidak ada transaksi yang sedang berlangsung!');
+            return;
+        }
 
-    public function transaksiSelesai(){
-        $this->transaksiAktif->total = $this->totalSebelumBelanja;
-        $this->transaksiAktif->status = 'selesai';
-        $this->transaksiAktif->save();
-        $this->reset();
+        // Hitung ulang total jika perlu
+        $this->totalSebelumBelanja = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)
+            ->get()
+            ->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
+
+        // Cek apakah pembayaran mencukupi
+        if ($this->bayar < $this->totalSebelumBelanja) {
+            session()->flash('error', 'Pembayaran tidak cukup!');
+            return;
+        }
+
+        // Update transaksi menjadi selesai
+        $this->transaksiAktif->update([
+            'total' => $this->totalSebelumBelanja,
+            'status' => 'selesai'
+        ]);
+
+        // Reset semua variabel setelah transaksi selesai
+        $this->reset(['transaksiAktif', 'kode', 'total', 'bayar', 'kembalian', 'totalSebelumBelanja']);
+
+        session()->flash('success', 'Transaksi berhasil diselesaikan!');
     }
 
+
     public function updatedBayar()
-{
-    $this->bayar = (float) $this->bayar;
-    $this->totalSebelumBelanja = (float) $this->totalSebelumBelanja;
+    {
+        $this->bayar = (float) $this->bayar;
 
-    $this->kembalian = $this->bayar - $this->totalSebelumBelanja;
-}
+        if (!isset($this->totalSebelumBelanja)) {
+            $this->totalSebelumBelanja = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get()->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
+        }
 
-
-
+        $this->kembalian = $this->bayar - $this->totalSebelumBelanja;
+    }
 }

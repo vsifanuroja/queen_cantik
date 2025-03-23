@@ -9,11 +9,13 @@ use App\Livewire\Laporan;
 use App\Livewire\Produk;
 use App\Livewire\Transaksi;
 
-Route::get('/', function () {
-    return view('welcome');
-});
 
-Auth::routes();
+Route::get('/transaksi', Transaksi::class)
+    ->middleware(['auth', 'role:kasir'])
+    ->name('transaksi');
+
+
+Auth::routes(['register' => false]);
 
 Route::get(uri: '/home', action: Beranda::class)->middleware(middleware: ['auth'])->name(name: 'home');
 Route::get(uri: '/user', action: User::class)->middleware(middleware: ['auth'])->name(name: 'user');

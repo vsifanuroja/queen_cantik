@@ -4,7 +4,7 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Laporan Transaksi</h4>
-                    <a href="{{ url('/cetak') }}" target="_blank">Cetak</a>
+                    <a href="{{ url('/cetak') }}" target="_blank"class="btn btn-primary">Cetak</a>
                     <table class="table table-bordered">
                         <thead>
                             <tr>
