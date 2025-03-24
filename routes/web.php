@@ -9,21 +9,22 @@ use App\Livewire\Laporan;
 use App\Livewire\Produk;
 use App\Livewire\Transaksi;
 
+// Route untuk halaman utama
+Route::get('/', Beranda::class)->middleware('auth')->name('home');
 
+// Route transaksi dengan middleware khusus
 Route::get('/transaksi', Transaksi::class)
-    ->middleware(['auth', 'role:kasir'])
+    ->middleware(['auth']) // Hanya auth, tanpa role
     ->name('transaksi');
 
 
+// Otentikasi
 Auth::routes(['register' => false]);
 
-Route::get(uri: '/home', action: Beranda::class)->middleware(middleware: ['auth'])->name(name: 'home');
-Route::get(uri: '/user', action: User::class)->middleware(middleware: ['auth'])->name(name: 'user');
+// Route lainnya
+Route::get('/user', User::class)->middleware('auth')->name('user');
+Route::get('/laporan', Laporan::class)->middleware('auth')->name('laporan');
+Route::get('/produk', Produk::class)->middleware('auth')->name('produk');
 
-Route::get(uri: '/laporan', action: Laporan::class)->middleware(middleware: ['auth'])->name(name: 'laporan');
-Route::get(uri: '/produk', action: Produk::class)->middleware(middleware: ['auth'])->name(name: 'produk');
-
-Route::get(uri: '/transaksi', action: Transaksi::class)->middleware(middleware: ['auth'])->name(name: 'transaksi');
-
-
+// Route cetak laporan
 Route::get('/cetak', [HomeController::class, 'cetak']);
