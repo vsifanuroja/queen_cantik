@@ -8,6 +8,8 @@ use App\Livewire\User;
 use App\Livewire\Laporan;
 use App\Livewire\Produk;
 use App\Livewire\Transaksi;
+use App\Http\Controllers\NotaController;
+
 
 // Route untuk halaman utama
 Route::get('/', Beranda::class)->middleware('auth')->name('home');
@@ -28,3 +30,4 @@ Route::get('/produk', Produk::class)->middleware('auth')->name('produk');
 
 // Route cetak laporan
 Route::get('/cetak', [HomeController::class, 'cetak']);
+Route::get('/nota/{id}', [NotaController::class, 'cetakNota'])->name('cetak.nota');

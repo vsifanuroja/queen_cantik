@@ -19,10 +19,7 @@
         <div class="col">
             <div class="card border-primary">
                 <div class="card-body">
-                    
-                    <h4 class="card-title">Kasir: {{ $transaksiAktif->kasir->name ?? 'Tidak diketahui' }}</h4>
                     <h4 class="card-title">No Invoice : {{ $transaksiAktif->kode }}</h4>
-
                     <input type="text" class="form-control" placeholder="No. Invoice" wire:model.lazy="kode">
                     <table class="table table-bordered mt-2">
 
@@ -50,14 +47,9 @@
                                             {{ $produk->jumlah }}
                                             <button class="btn btn-sm btn-secondary" wire:click="kurangiJumlah({{ $produk->id }})">-</button>
                                         </td>
-                                        <td>@money($produk->produk->harga * $produk->jumlah)</td>
-
+                                        <td>{{ number_format($produk->produk->harga * $produk->jumlah, 2, ',', '.') }}</td>
                                         <td>
-                                            <button class="btn btn-danger" wire:click="hapusProduk({{ $produk->id }})"
-                                                onclick="return confirm('Apakah Anda yakin ingin menghapus produk ini?')">
-                                                Hapus
-                                            </button>
-
+                                            <button class="btn btn-danger" wire:click="hapusProduk({{ $produk->id }})">Hapus</button>
                                         </td>
                                     </tr>
                                     @endforeach
