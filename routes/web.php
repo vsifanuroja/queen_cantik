@@ -11,23 +11,35 @@ use App\Livewire\Transaksi;
 use App\Http\Controllers\NotaController;
 
 
-// Route untuk halaman utama
-Route::get('/', Beranda::class)->middleware('auth')->name('home');
+// Route untuk halaman utama (Welcome Page) sebelum login
+Route::get('/', function () {
+    return view('welcome'); // Pastikan welcome.blade.php ada di resources/views
+})->name('welcome');
+
+
+Route::get('/about', function () {
+    return view('about');
+})->name('about');
+
+// Route untuk halaman beranda setelah login
+Route::get('/home', Beranda::class)->middleware('auth')->name('home');
 
 // Route transaksi dengan middleware khusus
 Route::get('/transaksi', Transaksi::class)
     ->middleware(['auth']) // Hanya auth, tanpa role
     ->name('transaksi');
 
-
-// Otentikasi
+// Otentikasi (nonaktifkan register)
 Auth::routes(['register' => false]);
 
-// Route lainnya
-Route::get('/user', User::class)->middleware('auth')->name('user');
-Route::get('/laporan', Laporan::class)->middleware('auth')->name('laporan');
-Route::get('/produk', Produk::class)->middleware('auth')->name('produk');
+// Route lainnya (hanya bisa diakses setelah login)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/user', User::class)->name('user');
+    Route::get('/laporan', Laporan::class)->name('laporan');
+    Route::get('/produk', Produk::class)->name('produk');
+});
 
 // Route cetak laporan
 Route::get('/cetak', [HomeController::class, 'cetak']);
-Route::get('/nota/{id}', [NotaController::class, 'cetakNota'])->name('cetak.nota');
+
+Route::get('/nota/cetak/{id}', [NotaController::class, 'cetak'])->name('nota.cetak');

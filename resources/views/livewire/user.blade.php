@@ -110,15 +110,17 @@
                 <br>
 
                 <label for="">Peran</label>
-                <select class="form-control" wire:model='peran'>
-                    <option>--pilih peran--</option>
-                    <option value="admin">Admin</option>
-                    <option value="kasir">Kasir</option>
-                </select>
-                @error('peran')
-                    <span class="text-danger">{{ $message }}</span>
-                @enderror
-                <br>
+        <select class="form-control" wire:model='peran'>
+            <option>--pilih peran--</option>
+            <option value="admin">Admin</option>
+            <option value="kasir">Kasir</option>
+            <option value="manajer">Manager</option> <!-- Menambahkan pilihan Manager -->
+        </select>
+        @error('peran')
+            <span class="text-danger">{{ $message }}</span>
+        @enderror
+        <br>
+
 
                 <button type="submit" class="btn btn-primary mt-3">Simpan</button>
             </form>

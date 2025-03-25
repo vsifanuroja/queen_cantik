@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\Transaksi;
-use App\Models\DetilTransaksi;
 
 class NotaController extends Controller
 {
-    public function cetakNota($id)
+    public function cetak($id)
     {
-        // Ambil data transaksi berdasarkan ID
-        $transaksi = Transaksi::with('kasir')->findOrFail($id);
-        $detilTransaksi = DetilTransaksi::where('transaksi_id', $id)->with('produk')->get();
+        $transaksi = Transaksi::with('detilTransaksi.produk')->findOrFail($id);
 
-        // Generate PDF
-        $pdf = Pdf::loadView('nota', compact('transaksi', 'detilTransaksi'))->setPaper('A6', 'portrait');
+        if ($transaksi->status !== 'selesai') {
+            return redirect()->back()->with('error', 'Nota hanya bisa dicetak untuk transaksi yang selesai!');
+        }
 
-        return $pdf->stream("Nota_{$transaksi->kode}.pdf"); // Menampilkan PDF di browser
+        $pdf = Pdf::loadView('nota', compact('transaksi'));
+        return $pdf->stream('nota-transaksi.pdf');
     }
 }
+
