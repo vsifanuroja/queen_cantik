@@ -11,6 +11,7 @@
                                     <th>No</th>
                                     <th>Tanggal</th>
                                     <th>No. Inv.</th>
+                                    <th>Nama Kasir</th>
                                     <th>Total</th>
                                 </tr>
                             </thead>
@@ -19,8 +20,8 @@
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ \Carbon\Carbon::parse($transaksi->created_at)->format('d-m-Y H:i:s') }}</td>
->
                                     <td>{{ $transaksi->kode }}</td>
+                                    <td>{{ $transaksi->kasir?->name }}</td>
                                     <td>Rp, {{ number_format($transaksi->total, 2, ',', '.') }}</td>
                                 </tr>
                                 @endforeach

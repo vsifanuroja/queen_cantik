@@ -32,6 +32,7 @@
                                 <th>No</th>
                                 <th>Tanggal</th>
                                 <th>No. Inv.</th>
+                                <th>Nama Kasir</th>
                                 <th>Total</th>
                             </tr>
                         </thead>
@@ -41,6 +42,7 @@
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $transaksi->created_at->format('d-m-Y') }}</td>
                                 <td>{{ $transaksi->kode }}</td>
+                                <td>{{ $transaksi->kasir?->name }}</td>
                                 <td>{{ number_format($transaksi->total, 2, ',', '.') }}</td>
                             </tr>
                             @endforeach
