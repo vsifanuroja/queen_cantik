@@ -30,26 +30,32 @@ class Produk extends Component
         $this->pilihanMenu = $menu;
     }
 
-    public function simpan()
+    public function simpanProduk()
     {
         $this->validate([
-            'kode' => 'required|unique:produks,kode',
             'nama' => 'required',
+            'kode' => 'required|unique:produks,kode',
             'harga' => 'required|numeric',
             'stok' => 'required|numeric'
         ]);
 
         ModelProduk::create([
-            'kode' => $this->kode,
             'nama' => $this->nama,
+            'kode' => $this->kode,
             'harga' => $this->harga,
             'stok' => $this->stok
         ]);
 
-        $this->reset(['kode', 'nama', 'harga', 'stok']);
-        $this->pilihanMenu = 'lihat';
+        // Reset form
+        $this->reset(['nama', 'kode', 'harga', 'stok']);
+
+        // Update daftar produk
         $this->semuaProduk = ModelProduk::all();
+
+        // Kembali ke tampilan daftar produk
+        $this->pilihanMenu = 'lihat';
     }
+
 
     public function pilihEdit($id)
     {
@@ -96,7 +102,8 @@ class Produk extends Component
         $this->semuaProduk = ModelProduk::all();
     }
 
-    public function imporExcel()
+    public function importExcel()
+
     {
         $this->validate([
             'fileExcel' => 'required|mimes:xlsx,xls,csv'
