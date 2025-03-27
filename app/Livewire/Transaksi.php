@@ -9,29 +9,28 @@ use App\Models\Produk;
 
 class Transaksi extends Component
 {
-   // Di dalam metode render()
-   public function render()
-   {
-       $semuaProduk = [];
-       $this->totalSebelumBelanja = 0;
-
-       if ($this->transaksiAktif) {
-           $kasir = $this->transaksiAktif->kasir;  // Ambil kasir yang melakukan transaksi
-           $semuaProduk = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
-           $this->totalSebelumBelanja = $semuaProduk->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
-       }
-
-       return view('livewire.transaksi', [
-           'semuaProduk' => $semuaProduk,
-           'totalSemuaBelanja' => $this->totalSebelumBelanja,
-           'kasir' => $kasir ?? null,
-       ]);
-   }
-
-
-
     public $kode, $total, $bayar = 0, $kembalian, $totalSebelumBelanja;
     public $transaksiAktif = null;
+    public $barcode;
+
+    public function render()
+    {
+        $semuaProduk = [];
+        $this->totalSebelumBelanja = 0;
+        $kasir = null; // Pastikan variabel kasir dideklarasikan sebelum digunakan
+
+        if ($this->transaksiAktif) {
+            $kasir = $this->transaksiAktif->kasir;
+            $semuaProduk = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)->get();
+            $this->totalSebelumBelanja = $semuaProduk->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
+        }
+
+        return view('livewire.transaksi', [
+            'semuaProduk' => $semuaProduk,
+            'totalSemuaBelanja' => $this->totalSebelumBelanja,
+            'kasir' => $kasir,
+        ]);
+    }
 
     public function transaksiBaru(): void
     {
@@ -40,7 +39,7 @@ class Transaksi extends Component
             'kode' => 'INV' . date('YmdHis'),
             'total' => 0,
             'status' => 'pending',
-            'kasir_id' => Auth::id() // Menyimpan ID kasir yang sedang login
+            'kasir_id' => Auth::id()
         ]);
     }
 
@@ -70,23 +69,30 @@ class Transaksi extends Component
             return;
         }
 
-        if ($produk->stok > 0) {
-            $detil = DetilTransaksi::firstOrNew(
-                ['transaksi_id' => $this->transaksiAktif->id, 'produk_id' => $produk->id],
-                ['jumlah' => 0]
-            );
-
-            $detil->jumlah += 1;
-            $detil->save();
-            $produk->stok -= 1;
-            $produk->save();
-        } else {
-            session()->flash('error', 'Stok tidak mencukupi!');
-        }
-
+        $this->tambahProduk($produk->id);
         $this->reset('kode');
     }
 
+    public function tambahProduk($id)
+    {
+        $produk = Produk::find($id);
+
+        if (!$produk || $produk->stok <= 0) {
+            session()->flash('error', 'Stok tidak mencukupi atau produk tidak ditemukan!');
+            return;
+        }
+
+        $detil = DetilTransaksi::firstOrNew(
+            ['transaksi_id' => $this->transaksiAktif->id, 'produk_id' => $produk->id],
+            ['jumlah' => 0]
+        );
+
+        $detil->jumlah += 1;
+        $detil->save();
+
+        $produk->stok -= 1;
+        $produk->save();
+    }
 
     public function hapusProduk($id)
     {
@@ -95,9 +101,10 @@ class Transaksi extends Component
             $produk = Produk::find($detil->produk_id);
             $produk->stok += $detil->jumlah;
             $produk->save();
+            $detil->delete();
         }
-        $detil->delete();
     }
+
     public function transaksiSelesai()
     {
         if (!$this->transaksiAktif) {
@@ -105,7 +112,6 @@ class Transaksi extends Component
             return;
         }
 
-        // Hitung total transaksi
         $this->totalSebelumBelanja = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)
             ->get()
             ->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
@@ -115,46 +121,34 @@ class Transaksi extends Component
             return;
         }
 
-        // Update transaksi menjadi selesai
         $this->transaksiAktif->update([
             'total' => $this->totalSebelumBelanja,
             'status' => 'selesai'
         ]);
 
         session()->flash('success', 'Transaksi berhasil diselesaikan!');
-
-        // Cetak nota otomatis setelah transaksi selesai
         return redirect()->route('nota.cetak', ['id' => $this->transaksiAktif->id]);
     }
 
-
-
     public function updatedBayar()
-{
-    $this->bayar = (float) $this->bayar;
+    {
+        $this->bayar = (float) $this->bayar;
 
-    // Hitung ulang total setiap kali pembayaran diubah
-    $this->totalSebelumBelanja = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)
-        ->get()
-        ->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
+        $this->totalSebelumBelanja = DetilTransaksi::where('transaksi_id', $this->transaksiAktif->id)
+            ->get()
+            ->sum(fn($detil) => $detil->jumlah * $detil->produk->harga);
 
-    $this->kembalian = max($this->bayar - $this->totalSebelumBelanja, 0); // Tidak boleh negatif
-}
-
-
-
+        $this->kembalian = max($this->bayar - $this->totalSebelumBelanja, 0);
+    }
 
     public function tambahJumlah($id)
-{
-    $detil = DetilTransaksi::find($id);
+    {
+        $detil = DetilTransaksi::find($id);
 
-    if ($detil) {
-        // Pastikan stok masih tersedia sebelum menambah jumlah
-        if ($detil->produk->stok > 0) {
+        if ($detil && $detil->produk->stok > 0) {
             $detil->jumlah += 1;
             $detil->save();
 
-            // Kurangi stok produk
             $produk = Produk::find($detil->produk_id);
             $produk->stok -= 1;
             $produk->save();
@@ -162,38 +156,42 @@ class Transaksi extends Component
             session()->flash('error', 'Stok tidak mencukupi!');
         }
     }
-}
 
+    public function kurangiJumlah($id)
+    {
+        $detil = DetilTransaksi::find($id);
 
+        if ($detil && $detil->jumlah > 1) {
+            $detil->jumlah -= 1;
+            $detil->save();
 
-public function kurangiJumlah($id)
-{
-    $detil = DetilTransaksi::find($id);
-
-    if ($detil && $detil->jumlah > 1) {
-        $detil->jumlah -= 1;
-        $detil->save();
-
-        // Kembalikan stok produk
-        $produk = Produk::find($detil->produk_id);
-        $produk->stok += 1;
-        $produk->save();
-    } elseif ($detil) {
-        session()->flash('error', 'Jumlah minimal 1');
-    }
-}
-
-public function printNota()
-{
-    // Pastikan hanya transaksi selesai yang bisa dicetak
-    if (!$this->transaksiAktif || $this->transaksiAktif->status !== 'selesai') {
-        session()->flash('error', 'Nota hanya bisa dicetak setelah transaksi selesai!');
-        return;
+            $produk = Produk::find($detil->produk_id);
+            $produk->stok += 1;
+            $produk->save();
+        } else {
+            session()->flash('error', 'Jumlah minimal 1');
+        }
     }
 
-    return redirect()->route('nota.cetak', ['id' => $this->transaksiAktif->id]);
-}
+    public function printNota()
+    {
+        if (!$this->transaksiAktif || $this->transaksiAktif->status !== 'selesai') {
+            session()->flash('error', 'Nota hanya bisa dicetak setelah transaksi selesai!');
+            return;
+        }
 
+        return redirect()->route('nota.cetak', ['id' => $this->transaksiAktif->id]);
+    }
 
+    public function tambahProdukDariBarcode()
+    {
+        $produk = Produk::where('barcode', $this->barcode)->first();
 
+        if ($produk) {
+            $this->tambahProduk($produk->id);
+            $this->barcode = '';
+        } else {
+            session()->flash('error', 'Produk tidak ditemukan!');
+        }
+    }
 }

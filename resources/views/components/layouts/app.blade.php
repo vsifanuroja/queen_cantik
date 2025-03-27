@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
-
     <style>
        /* Body */
 body {
@@ -96,7 +95,7 @@ body {
     margin-left: 90px;
     flex-grow: 1;
     padding: 2rem;
-transition: margin-left 0.3s ease-in-out;
+    transition: margin-left 0.3s ease-in-out;
 }
 
 /* Mode Responsif */
@@ -132,17 +131,30 @@ transition: margin-left 0.3s ease-in-out;
                 </a>
                 @endif
 
+
+                @if (strtolower(Auth::user()->role) == 'kasir')
                 <a href="{{ route('transaksi') }}" wire:navigate class="nav__link {{ request()->routeIs('transaksi') ? 'active' : '' }}">
                     <i class="fas fa-money-bill-wave"></i> <span>Transaksi</span>
                 </a>
-
+                @endif
                 <a href="{{ route('laporan') }}" wire:navigate class="nav__link {{ request()->routeIs('laporan') ? 'active' : '' }}">
                     <i class="fas fa-file-alt"></i> <span>Laporan</span>
                 </a>
+
+                <!-- Tombol Logout -->
+                <a href="{{ route('logout') }}"
+                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                   class="nav__link">
+                    <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+                </a>
+
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
+
             </li>
         </ul>
     </div>
-
 
     <div class="content">
         {{ $slot }}

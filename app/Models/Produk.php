@@ -15,15 +15,15 @@ class Produk extends Model
         'kode', // Add kode here
         'harga',
         'stok',
+        'barcode'
     ];
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($produk) {
-            if (empty($produk->barcode)) {
-                $produk->barcode = rand(100000000000, 999999999999); // Generate barcode otomatis
-            }
-        });
-    }
+   // Generate barcode otomatis
+   public static function boot()
+   {
+       parent::boot();
+       static::creating(function ($produk) {
+           $produk->barcode = 'PRD-' . uniqid();
+       });
+   }
 
 }
